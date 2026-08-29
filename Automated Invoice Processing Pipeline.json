@@ -1,0 +1,238 @@
+{
+  "name": "Automated Invoice Processing Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "invoice-upload",
+        "responseMode": "=onReceived",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "626aaa89-28e5-4f96-8b3c-c947ed36bd64",
+      "name": "Webhook",
+      "webhookId": "0aa69981-5087-4d28-8989-02302c4b9329"
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "schemaType": "fromJson",
+        "jsonSchemaExample": "{\n  \"vendor_name\": \"Acme Corp\",\n  \"invoice_number\": \"INV-10023\",\n  \"date_issued\": \"2026-08-15\",\n  \"due_date\": \"2026-09-15\",\n  \"subtotal\": 1250.00,\n  \"tax_amount\": 100.00,\n  \"total_amount\": 1350.00,\n  \"line_items\": [\n    {\n      \"description\": \"Software Subscription\",\n      \"quantity\": 1,\n      \"unit_price\": 1250.00,\n      \"total\": 1250.00\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        448,
+        0
+      ],
+      "id": "10664ba3-197f-4f9a-994a-d37e900ba38b",
+      "name": "Information Extractor"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        296,
+        232
+      ],
+      "id": "c896826f-ae97-4c5b-ba8e-df3793a29aba",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "9HIZrneQ4RRrVXpe",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1OlplLWlO6c-Nu9k0kOFM_R_jfzuVFGbKe0hXAf-_BYQ",
+          "mode": "list",
+          "cachedResultName": "Invoice List",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1OlplLWlO6c-Nu9k0kOFM_R_jfzuVFGbKe0hXAf-_BYQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1OlplLWlO6c-Nu9k0kOFM_R_jfzuVFGbKe0hXAf-_BYQ/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Invoice ID": "={{ $json.output.invoice_number }}",
+            "Vendor": "={{ $json.output.vendor_name }}",
+            "Date Issued": "={{ $json.output.date_issued }}",
+            "Due Date": "={{ $json.output.due_date }}",
+            "Total Amount": "={{ $json.output.total_amount }}",
+            "Processed Date": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [
+            "Invoice ID"
+          ],
+          "schema": [
+            {
+              "id": "Invoice ID",
+              "displayName": "Invoice ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Vendor",
+              "displayName": "Vendor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Date Issued",
+              "displayName": "Date Issued",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Due Date",
+              "displayName": "Due Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Total Amount",
+              "displayName": "Total Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Processed Date",
+              "displayName": "Processed Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        800,
+        0
+      ],
+      "id": "64f853a4-1cd5-48fd-b570-3ffd38be419c",
+      "name": "Append or update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "2tVuuFq7kjDbgsCD",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        224,
+        0
+      ],
+      "id": "aa24b4d4-da4a-4587-bb55-8dbccec5e94f",
+      "name": "Extract from File"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Information Extractor",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Information Extractor": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Information Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "00218120-f941-41f4-aebb-5b1064d8cf64",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8dcf1940b94f751feed0d51e254ed5aadb77c8adc1f9d61f0563ae74dd6c94c4"
+  },
+  "nodeGroups": [],
+  "id": "EqWcpbfkqs5tWUTo",
+  "tags": []
+}
